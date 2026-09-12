@@ -10,11 +10,20 @@ class PenaltyKickService {
         this.statsKey = 'penaltyKickStats';
         this.muteKey = 'penaltyKickMute';
         this.themeKey = 'penaltyKickTheme';
+        this.playerIdKey = 'penaltyKickPlayerId';
+
+        // Google Apps Script Web App deployment URL + shared secret (see apps-script/Code.gs).
+        // Leave cloudApiUrl empty to run fully offline on localStorage only.
+        this.cloudApiUrl = '';
+        this.cloudApiKey = '';
+        this.playerId = this.getOrCreatePlayerId();
 
         this.stats = this.loadStats();
         this.isMuted = localStorage.getItem(this.muteKey) === 'true';
         this.themeSetting = localStorage.getItem(this.themeKey) || 'auto'; // 'auto', 'light', 'dark'
         this.audioCtx = null;
+
+        this.syncFromCloud();
 
         // Dynamic CSS injection for font
         this.injectGoogleFonts();
@@ -112,6 +121,59 @@ class PenaltyKickService {
         } catch (e) {
             console.error('Error saving stats to localStorage', e);
         }
+        this.syncToCloud();
+    }
+
+    // --- CLOUD SYNC (Google Sheets via Apps Script, see apps-script/Code.gs) ---
+
+    getOrCreatePlayerId() {
+        let id = localStorage.getItem(this.playerIdKey);
+        if (!id) {
+            id = 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+            localStorage.setItem(this.playerIdKey, id);
+        }
+        return id;
+    }
+
+    // Fresh browser (no local progress yet) adopts cloud stats, so progress
+    // can follow a player to a new device. Otherwise localStorage stays the
+    // source of truth and cloud is just a mirror.
+    async syncFromCloud() {
+        if (!this.cloudApiUrl) return;
+        try {
+            const url = `${this.cloudApiUrl}?action=getStats&playerId=${encodeURIComponent(this.playerId)}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data.found) {
+                const localIsFresh = this.stats.coins === 0 && this.stats.plays === 0;
+                if (localIsFresh) {
+                    this.stats = {
+                        coins: Number(data.stats.coins) || 0,
+                        wins: Number(data.stats.wins) || 0,
+                        streaks: Number(data.stats.streaks) || 0,
+                        bestStreak: Number(data.stats.bestStreak) || 0,
+                        plays: Number(data.stats.plays) || 0
+                    };
+                    this.saveStats();
+                    this.updateHeaderUI();
+                }
+            }
+        } catch (e) {
+            console.warn('Cloud stats fetch failed, using local only', e);
+        }
+    }
+
+    syncToCloud() {
+        if (!this.cloudApiUrl) return;
+        fetch(this.cloudApiUrl, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: 'updateStats',
+                apiKey: this.cloudApiKey,
+                playerId: this.playerId,
+                stats: this.stats
+            })
+        }).catch(e => console.warn('Cloud stats sync failed', e));
     }
 
     // --- COIN & WIN ACTIONS ---
