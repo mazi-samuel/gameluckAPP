@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚽ Penalty Kick Arena</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="game-hub.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        .game-wrapper {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: var(--shadow-premium);
+            max-width: 520px;
+            width: 100%;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .game-header h2 {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 40%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        body.light-theme .game-header h2 {
+            background: linear-gradient(135deg, #1f2937 40%, #4f46e5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .game-header p {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .difficulty-indicator {
+            font-size: 12px;
+            font-weight: 600;
+            margin: -5px 0 5px 0;
+        }
+
+        /* Difficulty picker */
+        .diff-picker {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin: -5px 0 5px 0;
+        }
+
+        .diff-pick-btn {
+            flex: 1;
+            max-width: 100px;
+            padding: 8px 0;
+            border-radius: 10px;
+            border: 1px solid var(--border-subtle);
+            background: rgba(255, 255, 255, 0.02);
+            color: var(--text-secondary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .diff-pick-btn:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-primary);
+        }
+
+        .diff-pick-btn.active[data-diff="easy"] {
+            background: rgba(16, 185, 129, 0.12);
+            border-color: var(--neon-green);
+            color: var(--neon-green);
+        }
+
+        .diff-pick-btn.active[data-diff="normal"] {
+            background: rgba(245, 158, 11, 0.12);
+            border-color: var(--neon-gold);
+            color: var(--neon-gold);
+        }
+
+        .diff-pick-btn.active[data-diff="hard"] {
+            background: rgba(239, 68, 68, 0.12);
+            border-color: var(--neon-red);
+            color: var(--neon-red);
+        }
+
+        /* Stats Row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-subtle);
+            padding: 10px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .stat-value.highlight {
+            color: var(--neon-blue);
+        }
+
+        /* Shootout Goal Canvas Frame */
+        .shootout-field {
+            background: linear-gradient(to bottom, #111422 0%, #162419 60%, #0d1a10 100%);
+            border: 2px solid var(--border-subtle);
+            border-radius: 16px;
+            height: 230px;
+            position: relative;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            overflow: hidden;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .goalpost-frame {
+            position: relative;
+            width: 240px;
+            height: 140px;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .post-left, .post-right {
+            position: absolute;
+            bottom: 0;
+            width: 6px;
+            height: 100%;
+            background: #fff;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        .post-left { left: 0; }
+        .post-right { right: 0; }
+
+        .crossbar-top {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        .goal-net {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 0;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px);
+            background-size: 12px 12px;
+            z-index: 1;
+        }
+
+        /* 3x3 Shoot Target Overlay */
+        .targeting-grid {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 0;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            z-index: 25;
+        }
+
+        .target-cell {
+            border: 1px dashed rgba(255, 255, 255, 0.08);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .target-cell:hover:not(.disabled) {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: var(--neon-blue);
+            color: #fff;
+        }
+
+        .target-cell.selected {
+            background: rgba(245, 158, 11, 0.2);
+            border: 2px solid var(--neon-gold) !important;
+            color: var(--neon-gold);
+            text-shadow: 0 0 4px rgba(245, 158, 11, 0.5);
+        }
+
+        /* Goalkeeper */
+        .gk-keeper {
+            position: absolute;
+            bottom: 0;
+            left: calc(50% - 20px);
+            width: 40px;
+            height: 65px;
+            z-index: 5;
+            transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .gk-body {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .gk-head {
+            width: 16px;
+            height: 16px;
+            background: #fbcfe8;
+            border-radius: 50%;
+            border: 2.5px solid #db2777;
+        }
+
+        .gk-jersey {
+            width: 26px;
+            height: 28px;
+            background: #db2777;
+            border-radius: 4px;
+            margin-top: 1px;
+            position: relative;
+        }
+
+        .gk-arm {
+            position: absolute;
+            top: 2px;
+            width: 6px;
+            height: 22px;
+            background: #db2777;
+            border-radius: 3px;
+            transition: transform 0.3s;
+        }
+
+        .gk-arm.left {
+            left: -5px;
+            transform-origin: top right;
+        }
+
+        .gk-arm.right {
+            right: -5px;
+            transform-origin: top left;
+        }
+
+        .gk-legs {
+            width: 20px;
+            height: 20px;
+            background: #1e293b;
+            border-radius: 2px;
+        }
+
+        /* Diving arm wiggles */
+        .gk-keeper.diving .gk-arm.left { transform: rotate(-100deg); }
+        .gk-keeper.diving .gk-arm.right { transform: rotate(100deg); }
+
+        /* Ball */
+        .shoot-ball {
+            position: absolute;
+            bottom: 12px;
+            left: calc(50% - 8px);
+            width: 16px;
+            height: 16px;
+            background: radial-gradient(circle at 35% 35%, #fff 0%, #cbd5e1 60%, #475569 100%);
+            border-radius: 50%;
+            z-index: 15;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.6);
+            transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .action-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .btn-action {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            padding: 14px;
+            border-radius: 12px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+            text-align: center;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .btn-action.kick {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border-color: #60a5fa;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+        }
+
+        .btn-action.kick:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
+        }
+
+        .btn-action:disabled {
+            background: rgba(255, 255, 255, 0.02);
+            border-color: var(--border-subtle);
+            color: var(--text-muted);
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .btn-action.secondary {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: var(--border-subtle);
+            color: var(--text-secondary);
+        }
+
+        .btn-action.secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-wrapper">
+        <div class="game-header">
+            <h2>⚽ Penalty Kick</h2>
+            <p>Target a zone, fire the kick, and outsmart the goalie!</p>
+        </div>
+
+        <div class="diff-picker" id="diffPicker">
+            <button class="diff-pick-btn" data-diff="easy" onclick="setDifficulty('easy')">Easy</button>
+            <button class="diff-pick-btn" data-diff="normal" onclick="setDifficulty('normal')">Normal</button>
+            <button class="diff-pick-btn" data-diff="hard" onclick="setDifficulty('hard')">Hard</button>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-box">
+                <span class="stat-label">Kicks Taken</span>
+                <span class="stat-value" id="attempts">0</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Goals</span>
+                <span class="stat-value" id="wins">0</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Accuracy</span>
+                <span class="stat-value highlight" id="accuracy">0%</span>
+            </div>
+        </div>
+
+        <!-- Racetrack visual -->
+        <div class="shootout-field">
+            <div class="goalpost-frame" id="goalFrame">
+                <div class="post-left"></div>
+                <div class="crossbar-top"></div>
+                <div class="post-right"></div>
+                <div class="goal-net"></div>
+                
+                <!-- Goalkeeper -->
+                <div class="gk-keeper" id="keeper">
+                    <div class="gk-body">
+                        <div class="gk-head"></div>
+                        <div class="gk-jersey">
+                            <div class="gk-arm left"></div>
+                            <div class="gk-arm right"></div>
+                        </div>
+                        <div class="gk-legs"></div>
+                    </div>
+                </div>
+
+                <!-- targeting cells overlay -->
+                <div class="targeting-grid" id="netGrid">
+                    <!-- Javascript generates cells here -->
+                </div>
+            </div>
+
+            <!-- Ball -->
+            <div class="shoot-ball" id="kickBall"></div>
+        </div>
+
+        <div class="action-row">
+            <button class="btn-action kick" id="kickBtn" onclick="kick()" disabled style="flex: 1;">🦵 FIRE KICK</button>
+        </div>
+    </div>
+
+    <!-- Shootout Game Over Modal -->
+    <div class="hub-modal-overlay" id="shootoutModal">
+        <div class="hub-modal-box">
+            <div class="hub-modal-icon" id="modalResultIcon">🏆⚽</div>
+            <h3 class="hub-modal-title" id="modalResultTitle">Goal scored!</h3>
+            <p class="hub-modal-desc" id="modalResultDesc">A beautiful shot hit the back of the net.</p>
+            
+            <div class="hub-modal-stats">
+                <div class="hub-modal-stat">
+                    <span class="hub-modal-stat-label">Target Zone</span>
+                    <span class="hub-modal-stat-value" id="modalTargetName" style="color: var(--neon-blue);">Top-Left</span>
+                </div>
+                <div class="hub-modal-stat">
+                    <span class="hub-modal-stat-label">Coins Earned</span>
+                    <span class="hub-modal-stat-value gold" id="modalCoins">0</span>
+                </div>
+            </div>
+
+            <div class="hub-modal-buttons">
+                <button class="hub-btn hub-btn-primary" onclick="closeResultModal(); resetKickBoard();" style="flex: 1;">Next Kick</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Standalone service manager: state, audio, header UI. See game-service.js -->
+    <script src="game-service.js"></script>
+    <script>
+        // 3x3 Shooting grid quadrant directions
+        const DIRECTIONS = {
+            TL: { name: 'Top Left', emoji: '↖️', gx: -80, gy: -100, x: 'left', y: 'top' },
+            TC: { name: 'Top Center', emoji: '⬆️', gx: 0, gy: -110, x: 'center', y: 'top' },
+            TR: { name: 'Top Right', emoji: '↗️', gx: 80, gy: -100, x: 'right', y: 'top' },
+            ML: { name: 'Mid Left', emoji: '⬅️', gx: -90, gy: -50, x: 'left', y: 'mid' },
+            MC: { name: 'Center', emoji: '⏺️', gx: 0, gy: -50, x: 'center', y: 'mid' },
+            MR: { name: 'Mid Right', emoji: '➡️', gx: 90, gy: -50, x: 'right', y: 'mid' },
+            BL: { name: 'Bottom Left', emoji: '↙️', gx: -80, gy: 0, x: 'left', y: 'bottom' },
+            BC: { name: 'Bottom Center', emoji: '⬇️', gx: 0, gy: 0, x: 'center', y: 'bottom' },
+            BR: { name: 'Bottom Right', emoji: '↘️', gx: 80, gy: 0, x: 'right', y: 'bottom' }
+        };
+
+        // Read difficulty configuration
+        const difficulty = window.gameHub.getDifficulty();
+        const activeDiffBtn = document.querySelector(`.diff-pick-btn[data-diff="${difficulty}"]`);
+        if (activeDiffBtn) activeDiffBtn.classList.add('active');
+
+        // Navigate to the same page with a new ?difficulty= param (reloads with fresh game state)
+        function setDifficulty(level) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('difficulty', level);
+            window.location.href = url.toString();
+        }
+
+        const DIFFICULTY_CONFIG = {
+            easy: { winChance: 0.50, baseCoins: 10 },
+            normal: { winChance: 0.30, baseCoins: 20 },
+            hard: { winChance: 0.11, baseCoins: 40 }
+        }[difficulty];
+
+        let selectedZone = null;
+        let attempts = 0;
+        let wins = 0;
+        let isShooting = false;
+
+        function renderNetGrid() {
+            const netGrid = document.getElementById('netGrid');
+            netGrid.innerHTML = '';
+            
+            // Render in 3x3 layout
+            Object.entries(DIRECTIONS).forEach(([key, dir]) => {
+                const cell = document.createElement('div');
+                cell.className = 'target-cell';
+                cell.dataset.id = key;
+                cell.textContent = dir.emoji;
+                cell.addEventListener('click', () => selectShootZone(key));
+                netGrid.appendChild(cell);
+            });
+        }
+
+        function selectShootZone(key) {
+            if (isShooting) return;
+            window.gameHub.playClick();
+            selectedZone = key;
+
+            document.querySelectorAll('.target-cell').forEach(cell => {
+                cell.classList.remove('selected');
+                if (cell.dataset.id === key) {
+                    cell.classList.add('selected');
+                }
+            });
+
+            document.getElementById('kickBtn').disabled = false;
+        }
+
+        function kick() {
+            if (!selectedZone || isShooting) return;
+            isShooting = true;
+            attempts++;
+            document.getElementById('attempts').textContent = attempts;
+            
+            // Disable actions
+            document.getElementById('kickBtn').disabled = true;
+            document.querySelectorAll('.target-cell').forEach(c => c.classList.add('disabled'));
+
+            // Determine outcome (won means goal score, lost means goalie saves it)
+            const won = Math.random() < DIFFICULTY_CONFIG.winChance;
+            
+            // Goalkeeper dive direction
+            let gkDiveZone = selectedZone; // default save
+            if (won) {
+                // Pick a different zone for keeper to dive to
+                const otherZones = Object.keys(DIRECTIONS).filter(z => z !== selectedZone);
+                gkDiveZone = otherZones[Math.floor(Math.random() * otherZones.length)];
+            }
+
+            // Animate goalkeeper diving
+            const gk = document.getElementById('keeper');
+            const keeperTarget = DIRECTIONS[gkDiveZone];
+            gk.classList.add('diving');
+            
+            // Apply coordinates transforms
+            const diveRotate = keeperTarget.gx > 0 ? '40deg' : keeperTarget.gx < 0 ? '-40deg' : '0deg';
+            gk.style.transform = `translate(${keeperTarget.gx}px, ${keeperTarget.gy}px) rotate(${diveRotate})`;
+
+            // Animate Ball
+            const ball = document.getElementById('kickBall');
+            const ballTarget = DIRECTIONS[selectedZone];
+            
+            // Translate ball to center of selected goal mouth cell
+            const ballX = ballTarget.gx;
+            const ballY = ballTarget.gy - 80; // offset vertical for baseline height
+            
+            // Sound beep
+            window.gameHub.playTone(550, 0.08, 'triangle', 0.1);
+
+            setTimeout(() => {
+                ball.style.transform = `translate(${ballX}px, ${ballY}px) scale(0.6)`;
+                ball.style.boxShadow = '0 1px 2px rgba(0,0,0,0.3)';
+            }, 50);
+
+            // Wait for animation to finish
+            setTimeout(() => {
+                finishPenalty(won);
+            }, 850);
+        }
+
+        function finishPenalty(won) {
+            let coinsEarned = 0;
+            if (won) {
+                wins++;
+                coinsEarned = DIFFICULTY_CONFIG.baseCoins;
+                window.gameHub.recordWin('penalty', coinsEarned);
+                window.gameHub.playWin();
+                
+                document.getElementById('modalResultTitle').textContent = 'Goal scored!';
+                document.getElementById('modalResultIcon').textContent = '🏆⚽🎉';
+                document.getElementById('modalResultDesc').textContent = 'Sleek strike! You hit the target and beat the goalkeeper!';
+            } else {
+                window.gameHub.recordLoss();
+                window.gameHub.playTone(250, 0.35, 'sawtooth', 0.1);
+                
+                document.getElementById('modalResultTitle').textContent = 'Saved!';
+                document.getElementById('modalResultIcon').textContent = '🥅🧤';
+                document.getElementById('modalResultDesc').textContent = 'The goalkeeper guessed correctly and blocked your shot.';
+            }
+
+            // Update stats layout
+            document.getElementById('wins').textContent = wins;
+            document.getElementById('accuracy').textContent = Math.round((wins / attempts) * 100) + '%';
+
+            // Open Modal
+            document.getElementById('modalTargetName').textContent = DIRECTIONS[selectedZone].name;
+            document.getElementById('modalCoins').textContent = coinsEarned;
+            
+            document.getElementById('shootoutModal').classList.add('active');
+        }
+
+        function closeResultModal() {
+            document.getElementById('shootoutModal').classList.remove('active');
+        }
+
+        function resetKickBoard() {
+            selectedZone = null;
+            isShooting = false;
+            
+            // Restore buttons
+            document.querySelectorAll('.target-cell').forEach(c => {
+                c.classList.remove('selected', 'disabled');
+            });
+            document.getElementById('kickBtn').disabled = true;
+
+            // Reset keeper position
+            const gk = document.getElementById('keeper');
+            gk.classList.remove('diving');
+            gk.style.transform = 'none';
+
+            // Reset ball position
+            const ball = document.getElementById('kickBall');
+            ball.style.transform = 'none';
+            ball.style.boxShadow = '0 4px 6px rgba(0,0,0,0.6)';
+        }
+
+        // Initialize board
+        function initGame() {
+            renderNetGrid();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initGame);
+        } else {
+            initGame();
+        }
+    </script>
+</body>
+</html>
