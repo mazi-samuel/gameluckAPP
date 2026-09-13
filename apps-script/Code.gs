@@ -1,14 +1,18 @@
 /**
  * Penalty Kick Arena — Google Sheets backend (Apps Script Web App)
  *
- * Deploy: Extensions > Apps Script in a Google Sheet, paste this file, set
- * API_KEY below, then Deploy > New deployment > Web app
+ * Deploy: Extensions > Apps Script in a Google Sheet, paste this file.
+ * Project Settings > Script Properties > add API_KEY with a random secret,
+ * then Deploy > New deployment > Web app
  *   Execute as: Me
  *   Who has access: Anyone
  * Copy the deployment URL into game-service.js (cloudApiUrl / cloudApiKey).
  */
 
-const API_KEY = 'REPLACE_WITH_A_RANDOM_SECRET';
+function getApiKey() {
+  return PropertiesService.getScriptProperties().getProperty('API_KEY');
+}
+
 const STATS_SHEET_NAME = 'PlayerStats';
 const STATS_HEADERS = ['playerId', 'coins', 'wins', 'streaks', 'bestStreak', 'plays', 'updatedAt'];
 
@@ -63,7 +67,8 @@ function doPost(e) {
     return jsonResponse({ error: 'Invalid JSON body' });
   }
 
-  if (body.apiKey !== API_KEY) {
+  const apiKey = getApiKey();
+  if (!apiKey || body.apiKey !== apiKey) {
     return jsonResponse({ error: 'Unauthorized' });
   }
 

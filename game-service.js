@@ -13,9 +13,11 @@ class PenaltyKickService {
         this.playerIdKey = 'penaltyKickPlayerId';
 
         // Google Apps Script Web App deployment URL + shared secret (see apps-script/Code.gs).
-        // Leave cloudApiUrl empty to run fully offline on localStorage only.
-        this.cloudApiUrl = '';
-        this.cloudApiKey = '';
+        // Set via config.js (gitignored, copy from config.example.js). Leave unset to run
+        // fully offline on localStorage only.
+        const cloudConfig = window.PENALTY_KICK_CONFIG || {};
+        this.cloudApiUrl = cloudConfig.cloudApiUrl || '';
+        this.cloudApiKey = cloudConfig.cloudApiKey || '';
         this.playerId = this.getOrCreatePlayerId();
 
         this.stats = this.loadStats();
