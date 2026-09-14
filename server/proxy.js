@@ -1,19 +1,23 @@
-// server/proxy.js — deployed as /var/www/gameluck.app/server/proxy.js
-// Proxies subscription status checks to the mobempowerment.com upstream so the
-// browser never calls it (and its host) directly.
 const express = require('express');
 const app = express();
 
+// Manual/testing lookup — you supply the number in the URL
 app.get('/api/check-status/:msisdn/:serviceId', async (req, res) => {
-    const { msisdn, serviceId } = req.params;
-    try {
-        const upstream = await fetch(`http://mobempowerment.com/api/bnw/status/${msisdn}/${serviceId}`);
-        const data = await upstream.json();
-        res.status(upstream.status).json(data);
-    } catch (e) {
-        console.error('Upstream status check failed', e);
-        res.status(502).json({ error: 'Upstream status check failed' });
-    }
+  const { msisdn, serviceId } = req.params;
+  const upstream = await fetch(`http://mobempowerment.com/api/bnw/status/${msisdn}/${serviceId}`);
+  const data = await upstream.json();
+  res.json(data);
+});
+
+// Automatic check for real site visitors — reads MSISDN from the carrier-injected header
+app.get('/api/check-status', async (req, res) => {
+  const msisdn = req.headers['msisdn'];
+  if (!msisdn) {
+    return res.status(400).json({ error: 'MSISDN header missing — not coming through carrier gateway' });
+  }
+  const upstream = await fetch(`http://mobempowerment.com/api/bnw/status/${msisdn}/264`);
+  const data = await upstream.json();
+  res.json(data);
 });
 
 app.listen(3001, () => {
