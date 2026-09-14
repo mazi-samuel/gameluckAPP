@@ -1,0 +1,16 @@
+{
+  "name": "penalty-kick-service-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Status-check proxy for gameluck.app, run behind nginx alongside the static site.",
+  "main": "proxy.js",
+  "scripts": {
+    "start": "node proxy.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
