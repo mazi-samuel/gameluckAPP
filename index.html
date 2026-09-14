@@ -656,11 +656,25 @@
             renderNetGrid();
         }
 
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initGame);
-        } else {
+        async function verifyAccessAndStart() {
+    try {
+        const res = await fetch('/api/check-status');
+        const data = await res.json();
+        if (res.ok && data.status === 'subscribed') {
             initGame();
+        } else {
+            document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;text-align:center;padding:20px;"><p>This game is only available through your mobile network. Please access it via your carrier\'s game portal.</p></div>';
         }
+    } catch (err) {
+        document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;text-align:center;padding:20px;"><p>Unable to verify access right now. Please try again shortly.</p></div>';
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', verifyAccessAndStart);
+} else {
+    verifyAccessAndStart();
+}
     </script>
 </body>
 </html>
